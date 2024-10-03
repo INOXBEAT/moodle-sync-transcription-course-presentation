@@ -68,6 +68,40 @@ window.onload = function () {
                                                     .then(vttData => {
                                                         console.log(`Contenido del VTT (Diapositiva ${index + 1}):`);
                                                         console.log(vttData); // Imprimir el contenido del archivo VTT
+
+                                                        // Crear un grid con Bootstrap 5
+                                                        const container = h5pDocument.createElement('div');
+                                                        container.classList.add('container', 'mt-4');
+
+                                                        const row = h5pDocument.createElement('div');
+                                                        row.classList.add('row');
+
+                                                        // Columna para el video (col-8)
+                                                        const colVideo = h5pDocument.createElement('div');
+                                                        colVideo.classList.add('col-12', 'col-md-8');
+                                                        colVideo.appendChild(videoElement); // Mover el video al col-8
+                                                        row.appendChild(colVideo); // Añadir el video a la fila
+
+                                                        // Columna para los subtítulos (col-4)
+                                                        const colText = h5pDocument.createElement('div');
+                                                        colText.classList.add('col-12', 'col-md-4');
+                                                        colText.style.overflowY = 'auto'; // Scroll para subtítulos
+                                                        colText.style.maxHeight = '520px'; // Limitar altura del contenedor de subtítulos
+
+                                                        // Crear el contenido de subtítulos a partir del VTT
+                                                        const subtitles = vttData.split('\n').filter(line => line && !line.startsWith('WEBVTT') && !line.includes('-->'));
+                                                        subtitles.forEach(subtitleText => {
+                                                            const p = h5pDocument.createElement('p');
+                                                            p.textContent = subtitleText.trim();
+                                                            colText.appendChild(p);
+                                                        });
+
+                                                        row.appendChild(colText); // Añadir los subtítulos a la fila
+
+                                                        // Colocar el grid en la diapositiva
+                                                        container.appendChild(row);
+                                                        slide.innerHTML = ''; // Limpiar la diapositiva actual antes de insertar el grid
+                                                        slide.appendChild(container); // Añadir el grid a la diapositiva
                                                     })
                                                     .catch(error => {
                                                         console.error(`Error al obtener el archivo VTT: ${error.message}`);
