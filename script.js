@@ -22,6 +22,15 @@ window.onload = function () {
                 // Limpiar el intervalo cuando el contenido esté listo
                 clearInterval(interval);
 
+                // **Añadir Bootstrap 5 al documento**
+                const link = h5pDocument.createElement('link');
+                link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css";
+                link.rel = "stylesheet";
+                link.crossOrigin = "anonymous";
+                h5pDocument.head.appendChild(link);
+
+                console.log('Bootstrap 5 agregado al documento.');
+
                 // Identificar las diapositivas de la presentación
                 const slides = h5pDocument.querySelectorAll('.h5p-slide'); // Asegúrate de usar el selector adecuado para las diapositivas
 
@@ -49,6 +58,23 @@ window.onload = function () {
                                         const trackElement = videoElement.querySelector('track');
                                         if (trackElement) {
                                             console.log(`Diapositiva ${index + 1}: video con subtítulos.`);
+
+                                            // Obtener el archivo VTT desde el src del <track>
+                                            const vttSrc = trackElement.getAttribute('src');
+                                            if (vttSrc) {
+                                                // Hacer una petición para obtener el contenido del archivo VTT
+                                                fetch(vttSrc)
+                                                    .then(response => response.text())
+                                                    .then(vttData => {
+                                                        console.log(`Contenido del VTT (Diapositiva ${index + 1}):`);
+                                                        console.log(vttData); // Imprimir el contenido del archivo VTT
+                                                    })
+                                                    .catch(error => {
+                                                        console.error(`Error al obtener el archivo VTT: ${error.message}`);
+                                                    });
+                                            } else {
+                                                console.log('No se encontró el atributo src en la etiqueta <track>.');
+                                            }
                                         } else {
                                             console.log(`Diapositiva ${index + 1}: video sin subtítulos.`);
                                         }
