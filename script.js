@@ -1,11 +1,9 @@
 window.onload = function () {
-    // Buscar el iframe dentro del div con la clase 'h5p-iframe-wrapper'
-    const h5pContent = document.querySelector('.h5p-iframe-wrapper iframe');
+    const h5pContent = document.querySelector('.h5p-iframe-wrapper iframe'); // Identifica el iframe del contenido H5P
 
     if (h5pContent) {
         console.log('Iframe H5P encontrado.');
 
-        // Verificar periódicamente si el contenido del iframe está cargado
         const interval = setInterval(function () {
             let h5pDocument;
 
@@ -18,11 +16,9 @@ window.onload = function () {
 
             if (h5pDocument && h5pDocument.readyState === 'complete') {
                 console.log('Contenido H5P cargado.');
+                clearInterval(interval); // Eliminar el intervalo al cargar el contenido
 
-                // Limpiar el intervalo cuando el contenido esté listo
-                clearInterval(interval);
-
-                // **Añadir Bootstrap 5 al documento**
+                // Añadir Bootstrap 5 al documento
                 const link = h5pDocument.createElement('link');
                 link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css";
                 link.rel = "stylesheet";
@@ -32,112 +28,84 @@ window.onload = function () {
                 console.log('Bootstrap 5 agregado al documento.');
 
                 // Identificar las diapositivas de la presentación
-                const slides = h5pDocument.querySelectorAll('.h5p-slide'); // Asegúrate de usar el selector adecuado para las diapositivas
+                const slides = h5pDocument.querySelectorAll('.h5p-slide');
 
                 if (slides.length > 0) {
                     console.log(`Se han encontrado ${slides.length} diapositivas en la presentación.`);
 
-                    let currentSlideIndex = -1;  // Para rastrear la diapositiva actual
+                    let currentSlideIndex = -1; // Rastreo de diapositiva actual
+                    let currentVideo = null;  // Rastreo del video actualmente sincronizado
 
-                    // Función para detectar diapositiva activa, su contenido, y generar el log correspondiente
+                    // Función para manejar el cambio de diapositiva
                     const handleSlideChange = () => {
                         slides.forEach((slide, index) => {
                             if (slide.classList.contains('h5p-current')) {
-                                if (currentSlideIndex !== index) {  // Solo log cuando cambie de diapositiva
+                                if (currentSlideIndex !== index) {
                                     currentSlideIndex = index;
 
-                                    // Determinar el tipo de contenido de la diapositiva
-                                    let contentType = "Desconocido";  // Inicializamos como desconocido
+                                    // Log para indicar la diapositiva actual
+                                    console.log(`--- Diapositiva actual: ${index + 1} ---`);
+
+                                    // Determinar si la diapositiva contiene un video o una imagen
                                     const videoElement = slide.querySelector('video');
                                     const imgElement = slide.querySelector('img');
 
                                     if (videoElement) {
-                                        contentType = "video";
-
-                                        // Verificar si el video tiene subtítulos (track)
+                                        console.log(`Diapositiva ${index + 1}: Contiene un video.`);
                                         const trackElement = videoElement.querySelector('track');
                                         if (trackElement) {
-                                            console.log(`Diapositiva ${index + 1}: video con subtítulos.`);
+                                            console.log(`Diapositiva ${index + 1}: El video tiene subtítulos.`);
 
-                                            // Obtener el archivo VTT desde el src del <track>
                                             const vttSrc = trackElement.getAttribute('src');
                                             if (vttSrc) {
-                                                // Hacer una petición para obtener el contenido del archivo VTT
+                                                // Fetch para obtener el contenido del archivo VTT
                                                 fetch(vttSrc)
                                                     .then(response => response.text())
                                                     .then(vttData => {
-                                                        console.log(`Contenido del VTT (Diapositiva ${index + 1}):`);
-                                                        console.log(vttData); // Imprimir el contenido del archivo VTT
+                                                        console.log(`Texto de la diapositiva ${index + 1}:`);
+                                                        console.log(vttData); // Imprimir el contenido del archivo VTT en el log
 
-                                                        // Crear un grid con Bootstrap 5
-                                                        const container = h5pDocument.createElement('div');
-                                                        container.classList.add('container', 'mt-4');
+                                                        const captions = processVTT(vttData);
+                                                        const container = createGridLayout(h5pDocument, slide, videoElement, captions);
 
-                                                        const row = h5pDocument.createElement('div');
-                                                        row.classList.add('row');
+                                                        slide.innerHTML = ''; // Limpiar la diapositiva actual
+                                                        slide.appendChild(container); // Añadir el nuevo grid
 
-                                                        // Columna para el video (col-8)
-                                                        const colVideo = h5pDocument.createElement('div');
-                                                        colVideo.classList.add('col-12', 'col-md-8');
-                                                        colVideo.appendChild(videoElement); // Mover el video al col-8
-                                                        row.appendChild(colVideo); // Añadir el video a la fila
+                                                        // Desincronizar el video anterior si lo hubiera
+                                                        if (currentVideo) {
+                                                            console.log('Eliminando el evento timeupdate del video anterior.');
+                                                            currentVideo.removeEventListener('timeupdate', syncEventHandler);
+                                                        }
 
-                                                        // Columna para los subtítulos (col-4)
-                                                        const colText = h5pDocument.createElement('div');
-                                                        colText.classList.add('col-12', 'col-md-4');
-                                                        colText.style.overflowY = 'auto'; // Scroll para subtítulos
-                                                        colText.style.maxHeight = '520px'; // Limitar altura del contenedor de subtítulos
-
-                                                        // Crear el contenido de subtítulos a partir del VTT
-                                                        const subtitles = vttData.split('\n').filter(line => line && !line.startsWith('WEBVTT') && !line.includes('-->'));
-                                                        subtitles.forEach(subtitleText => {
-                                                            const p = h5pDocument.createElement('p');
-                                                            p.textContent = subtitleText.trim();
-                                                            colText.appendChild(p);
-                                                        });
-
-                                                        row.appendChild(colText); // Añadir los subtítulos a la fila
-
-                                                        // Colocar el grid en la diapositiva
-                                                        container.appendChild(row);
-                                                        slide.innerHTML = ''; // Limpiar la diapositiva actual antes de insertar el grid
-                                                        slide.appendChild(container); // Añadir el grid a la diapositiva
+                                                        // Sincronizar subtítulos con el nuevo video
+                                                        syncSubtitles(videoElement, captions, h5pDocument);
+                                                        currentVideo = videoElement;
                                                     })
-                                                    .catch(error => {
-                                                        console.error(`Error al obtener el archivo VTT: ${error.message}`);
-                                                    });
+                                                    .catch(error => console.error(`Error al obtener el archivo VTT: ${error.message}`));
                                             } else {
-                                                console.log('No se encontró el atributo src en la etiqueta <track>.');
+                                                console.log(`Diapositiva ${index + 1}: El video no tiene subtítulos.`);
                                             }
                                         } else {
-                                            console.log(`Diapositiva ${index + 1}: video sin subtítulos.`);
+                                            console.log(`Diapositiva ${index + 1}: El video no tiene subtítulos.`);
                                         }
                                     } else if (imgElement) {
-                                        contentType = "img";
-                                        console.log(`Diapositiva ${index + 1}: img`);
+                                        console.log(`Diapositiva ${index + 1}: Contiene una imagen.`);
                                     } else {
-                                        const otherContent = slide.children; // Para otros posibles contenidos
-                                        if (otherContent.length > 0) {
-                                            contentType = otherContent[0].tagName.toLowerCase(); // Tomar el primer tag del contenido
-                                        }
-                                        console.log(`Diapositiva ${index + 1}: ${contentType}`);
+                                        console.log(`Diapositiva ${index + 1}: Contenido desconocido.`);
                                     }
                                 }
                             }
                         });
                     };
 
-                    // Crear un MutationObserver para observar cambios en las clases de las diapositivas
+                    // Crear un MutationObserver para observar cambios en las diapositivas
                     const observer = new MutationObserver(handleSlideChange);
-
-                    // Configurar el observer para observar cambios en los atributos (como la clase)
                     slides.forEach(slide => {
                         observer.observe(slide, { attributes: true, attributeFilter: ['class'] });
                     });
 
                     // Ejecutar la función una vez al cargar
                     handleSlideChange();
-
                 } else {
                     console.log('No se encontraron diapositivas en la presentación.');
                 }
@@ -147,5 +115,147 @@ window.onload = function () {
         }, 500); // Intentar cada 500ms
     } else {
         console.log('No se encontró ningún iframe con la clase h5p-iframe-wrapper.');
+    }
+
+    // Procesar el archivo VTT y extraer los subtítulos
+    function processVTT(vttData) {
+        const lines = vttData.split('\n');
+        const captions = [];
+        let currentCaption = {};
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line === 'WEBVTT') continue;
+
+            if (line.includes('-->')) {
+                const times = line.split(' --> ');
+                currentCaption = {
+                    start: parseTime(times[0].trim()),
+                    end: parseTime(times[1].trim()),
+                    text: ''
+                };
+            } else if (line.length > 0) {
+                currentCaption.text += line + ' ';
+            }
+
+            if ((line.length === 0 || i === lines.length - 1) && currentCaption.text) {
+                captions.push(currentCaption);
+                currentCaption = {};
+            }
+        }
+
+        return captions;
+    }
+
+    // Convertir el formato de tiempo "MM:SS.milliseconds" a segundos
+    function parseTime(timeString) {
+        const timeParts = timeString.split(":");
+        if (timeParts.length === 2) {
+            const minutes = parseInt(timeParts[0], 10) * 60;
+            const secondsParts = timeParts[1].split('.');
+            const seconds = parseInt(secondsParts[0], 10);
+            const milliseconds = secondsParts[1] ? parseInt(secondsParts[1], 10) / 1000 : 0;
+            return minutes + seconds + milliseconds;
+        }
+        return 0;
+    }
+
+    // Crear el grid layout para el video y los subtítulos
+    function createGridLayout(document, slide, videoElement, captions) {
+        const container = document.createElement('div');
+        container.classList.add('container', 'mt-4');
+
+        const row = document.createElement('div');
+        row.classList.add('row');
+
+        // Columna de video (col-8)
+        const colVideo = document.createElement('div');
+        colVideo.classList.add('col-12', 'col-md-8');
+        colVideo.appendChild(videoElement);
+        row.appendChild(colVideo);
+
+        // Columna de subtítulos (col-4)
+        const colText = document.createElement('div');
+        colText.classList.add('col-12', 'col-md-4');
+        colText.id = 'captions-container';
+        colText.style.overflowY = 'auto';
+        colText.style.maxHeight = '520px';
+
+        // Crear subtítulos interactivos
+        captions.forEach((caption, index) => {
+            const captionElement = document.createElement('span');
+            captionElement.id = `caption-${index}`;
+            captionElement.textContent = caption.text.trim();
+            captionElement.style.display = 'block';
+            captionElement.style.cursor = 'pointer';
+            captionElement.onclick = () => {
+                videoElement.currentTime = caption.start;
+                videoElement.play();
+            };
+            colText.appendChild(captionElement);
+        });
+
+        row.appendChild(colText);
+        container.appendChild(row);
+        return container;
+    }
+
+    // Sincronizar los subtítulos con el video
+    let syncEventHandler; // Definir el event handler para eliminarlo después si es necesario
+
+    function syncSubtitles(videoElement, captions, document) {
+        let isUserInteracting = false;
+        let inactivityTimeout;
+
+        // Evento de sincronización que se ejecuta cuando cambia el tiempo del video
+        syncEventHandler = () => {
+            const currentTime = videoElement.currentTime;
+
+            // Log para verificar si el evento timeupdate se está ejecutando
+            console.log(`timeupdate ejecutado, tiempo actual: ${currentTime.toFixed(2)} segundos`);
+
+            captions.forEach((caption, index) => {
+                const captionElement = document.getElementById(`caption-${index}`);
+
+                // Verificar si el tiempo actual está dentro del rango del subtítulo (start y end)
+                if (currentTime >= caption.start && currentTime <= caption.end) {
+                    captionElement.style.fontWeight = 'bold';
+                    captionElement.style.backgroundColor = '#a9c1c7';
+
+                    // Auto-scroll al subtítulo resaltado si el usuario no está interactuando
+                    if (!isUserInteracting) {
+                        const colText = document.getElementById('captions-container');
+                        const containerHeight = colText.clientHeight;
+                        const elementOffset = captionElement.offsetTop;
+                        const elementHeight = captionElement.offsetHeight;
+
+                        // Calcular la nueva posición de scroll
+                        const scrollTo = elementOffset - (containerHeight / 2) + (elementHeight / 2);
+                        colText.scrollTo({ top: scrollTo, behavior: 'smooth' });
+                    }
+                } else {
+                    // Desactivar el resaltado si el subtítulo ya no está en el rango
+                    captionElement.style.fontWeight = 'normal';
+                    captionElement.style.backgroundColor = 'transparent';
+                }
+            });
+        };
+
+        // Añadir el evento timeupdate para la sincronización
+        videoElement.addEventListener('timeupdate', syncEventHandler);
+
+        // Control de inactividad del usuario para detener el auto-scroll
+        const resetInactivityTimer = () => {
+            isUserInteracting = true;
+            clearTimeout(inactivityTimeout);
+            inactivityTimeout = setTimeout(() => {
+                isUserInteracting = false;
+            }, 3500); // 3.5 segundos de inactividad
+        };
+
+        // Detectar interacciones del usuario en el contenedor de subtítulos
+        const colText = document.getElementById('captions-container');
+        colText.addEventListener('scroll', resetInactivityTimer);
+        colText.addEventListener('mousemove', resetInactivityTimer);
     }
 };
