@@ -34,7 +34,8 @@ window.onload = function () {
                     console.log(`Se han encontrado ${slides.length} diapositivas en la presentación.`);
 
                     let currentSlideIndex = -1; // Rastreo de diapositiva actual
-                    let currentVideo = null;  // Rastreo del video actualmente sincronizado
+                    let currentVideo = null;    // Rastreo del video actualmente sincronizado
+                    let syncEventHandler = null; // Manejador de eventos de sincronización
 
                     // Función para manejar el cambio de diapositiva
                     const handleSlideChange = () => {
@@ -45,6 +46,12 @@ window.onload = function () {
 
                                     // Log para indicar la diapositiva actual
                                     console.log(`--- Diapositiva actual: ${index + 1} ---`);
+
+                                    // Desincronizar el video anterior si lo hubiera
+                                    if (currentVideo && syncEventHandler) {
+                                        currentVideo.removeEventListener('timeupdate', syncEventHandler);
+                                        syncEventHandler = null;
+                                    }
 
                                     // Determinar si la diapositiva contiene un video o una imagen
                                     const videoElement = slide.querySelector('video');
@@ -61,22 +68,18 @@ window.onload = function () {
                                                 fetch(vttSrc)
                                                     .then(response => response.text())
                                                     .then(vttData => {
-                                                        console.log(`Contenido del track (subtítulos) en la diapositiva ${index + 1}:\n${vttData}`); // Imprimir el contenido del archivo VTT en el log
+                                                        console.log(`Contenido del track (subtítulos) en la diapositiva ${index + 1}:\n${vttData}`);
 
+                                                        // Crear subtítulos y contenedor para la diapositiva actual
                                                         const captions = processVTT(vttData);
-                                                        const container = createGridLayout(h5pDocument, slide, videoElement, captions);
+                                                        const container = createGridLayout(h5pDocument, slide, videoElement, captions, index);
 
                                                         slide.innerHTML = ''; // Limpiar la diapositiva actual
                                                         slide.appendChild(container); // Añadir el nuevo grid
 
-                                                        // Desincronizar el video anterior si lo hubiera
-                                                        if (currentVideo) {
-                                                            console.log('Eliminando el evento timeupdate del video anterior.');
-                                                            currentVideo.removeEventListener('timeupdate', syncEventHandler);
-                                                        }
-
-                                                        // Sincronizar subtítulos con el nuevo video
-                                                        syncSubtitles(videoElement, captions, h5pDocument);
+                                                        // Sincronizar subtítulos con el video actual
+                                                        syncEventHandler = () => syncSubtitles(videoElement, captions, h5pDocument, index);
+                                                        videoElement.addEventListener('timeupdate', syncEventHandler);
                                                         currentVideo = videoElement;
                                                     })
                                                     .catch(error => console.error(`Error al obtener el archivo VTT: ${error.message}`));
@@ -158,8 +161,8 @@ window.onload = function () {
         return 0;
     }
 
-    // Crear el grid layout para el video y los subtítulos
-    function createGridLayout(document, slide, videoElement, captions) {
+    // Crear el grid layout para el video y los subtítulos, con un ID único por diapositiva
+    function createGridLayout(document, slide, videoElement, captions, slideIndex) {
         const container = document.createElement('div');
         container.classList.add('container', 'mt-4');
 
@@ -172,17 +175,17 @@ window.onload = function () {
         colVideo.appendChild(videoElement);
         row.appendChild(colVideo);
 
-        // Columna de subtítulos (col-4)
+        // Columna de subtítulos (col-4) con ID único basado en la diapositiva
         const colText = document.createElement('div');
         colText.classList.add('col-12', 'col-md-4');
-        colText.id = 'captions-container';
+        colText.id = `captions-container-${slideIndex}`;
         colText.style.overflowY = 'auto';
         colText.style.maxHeight = '520px';
 
         // Crear subtítulos interactivos
         captions.forEach((caption, index) => {
             const captionElement = document.createElement('span');
-            captionElement.id = `caption-${index}`;
+            captionElement.id = `caption-${slideIndex}-${index}`;
             captionElement.textContent = caption.text.trim();
             captionElement.style.display = 'block';
             captionElement.style.cursor = 'pointer';
@@ -199,21 +202,19 @@ window.onload = function () {
     }
 
     // Sincronizar los subtítulos con el video
-    let syncEventHandler; // Definir el event handler para eliminarlo después si es necesario
-
-    function syncSubtitles(videoElement, captions, document) {
+    function syncSubtitles(videoElement, captions, document, slideIndex) {
         let isUserInteracting = false;
         let inactivityTimeout;
 
         // Evento de sincronización que se ejecuta cuando cambia el tiempo del video
-        syncEventHandler = () => {
+        const syncEventHandler = () => {
             const currentTime = videoElement.currentTime;
 
             // Log para verificar si el evento timeupdate se está ejecutando
             console.log(`timeupdate ejecutado, tiempo actual: ${currentTime.toFixed(2)} segundos`);
 
             captions.forEach((caption, index) => {
-                const captionElement = document.getElementById(`caption-${index}`);
+                const captionElement = document.getElementById(`caption-${slideIndex}-${index}`);
 
                 // Verificar si el tiempo actual está dentro del rango del subtítulo (start y end)
                 if (currentTime >= caption.start && currentTime <= caption.end) {
@@ -222,7 +223,7 @@ window.onload = function () {
 
                     // Auto-scroll al subtítulo resaltado si el usuario no está interactuando
                     if (!isUserInteracting) {
-                        const colText = document.getElementById('captions-container');
+                        const colText = document.getElementById(`captions-container-${slideIndex}`);
                         const containerHeight = colText.clientHeight;
                         const elementOffset = captionElement.offsetTop;
                         const elementHeight = captionElement.offsetHeight;
@@ -252,7 +253,7 @@ window.onload = function () {
         };
 
         // Detectar interacciones del usuario en el contenedor de subtítulos
-        const colText = document.getElementById('captions-container');
+        const colText = document.getElementById(`captions-container-${slideIndex}`);
         colText.addEventListener('scroll', resetInactivityTimer);
         colText.addEventListener('mousemove', resetInactivityTimer);
     }
