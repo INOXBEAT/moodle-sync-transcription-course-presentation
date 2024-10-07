@@ -58,12 +58,10 @@ window.onload = function () {
 
                                             const vttSrc = trackElement.getAttribute('src');
                                             if (vttSrc) {
-                                                // Fetch para obtener el contenido del archivo VTT
                                                 fetch(vttSrc)
                                                     .then(response => response.text())
                                                     .then(vttData => {
-                                                        console.log(`Texto de la diapositiva ${index + 1}:`);
-                                                        console.log(vttData); // Imprimir el contenido del archivo VTT en el log
+                                                        console.log(`Contenido del track (subtítulos) en la diapositiva ${index + 1}:\n${vttData}`); // Imprimir el contenido del archivo VTT en el log
 
                                                         const captions = processVTT(vttData);
                                                         const container = createGridLayout(h5pDocument, slide, videoElement, captions);
