@@ -152,22 +152,107 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
 }
 
 function setupCaptions(h5pDocument, captions, colText, type) {
-    colText.innerHTML = '';
+    colText.innerHTML = ''; 
+
+    const style = h5pDocument.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = `
+        .transcription-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .transcription-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .left-column {
+            flex: 1;
+            text-align: center;
+        }
+
+        .timestamp-button {
+            background: none;
+            border: none;
+            color: #0078d4;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .right-column {
+            flex: 5;
+            font-size: 14px;
+            color: #333;
+            padding-left: 8px; 
+            text-align: justify;
+        }
+
+        .highlighted {
+            background-color: #cae4e8;
+            font-weight: bold;
+        }
+    `;
+    h5pDocument.head.appendChild(style);
 
     captions.forEach((caption, index) => {
-        const captionElement = h5pDocument.createElement('span');
-        captionElement.id = `caption-${type}-${index}`;
-        captionElement.textContent = caption.text.trim();
-        captionElement.style.fontSize = '24px';
-        captionElement.style.display = 'block';
-        captionElement.style.cursor = 'pointer';
-        captionElement.onclick = function () {
+
+        const listItem = h5pDocument.createElement('div');
+        listItem.classList.add('transcription-item');
+        listItem.setAttribute('role', 'listitem');
+        listItem.id = `caption-${index}`; 
+        
+
+        const leftColumn = h5pDocument.createElement('div');
+        leftColumn.classList.add('left-column');
+        const timeButton = h5pDocument.createElement('button');
+        timeButton.classList.add('timestamp-button');
+        timeButton.textContent = formatTime(caption.start); 
+        timeButton.onclick = () => {
             const videoElement = h5pDocument.querySelector('video');
             videoElement.currentTime = caption.start;
             videoElement.play();
         };
-        colText.appendChild(captionElement);
+        leftColumn.appendChild(timeButton);
+
+        const rightColumn = h5pDocument.createElement('div');
+        rightColumn.classList.add('right-column');
+        rightColumn.textContent = caption.text.trim();
+
+        listItem.appendChild(leftColumn);
+        listItem.appendChild(rightColumn);
+
+        colText.appendChild(listItem);
     });
+
+    const videoElement = h5pDocument.querySelector('video');
+    videoElement.addEventListener('timeupdate', () => {
+        const currentTime = videoElement.currentTime;
+        captions.forEach((caption, index) => {
+            const listItem = h5pDocument.getElementById(`caption-${index}`);
+            if (currentTime >= caption.start && currentTime <= caption.end) {
+                listItem.classList.add('highlighted');
+
+                colText.scrollTo({
+                    top: listItem.offsetTop - colText.clientHeight / 2 + listItem.clientHeight / 2,
+                    behavior: 'smooth'
+                });
+            } else {
+                listItem.classList.remove('highlighted');
+            }
+        });
+    });
+}
+
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
 function processVTT(vttData) {
