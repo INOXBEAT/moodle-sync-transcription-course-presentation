@@ -207,7 +207,6 @@ function setupCaptions(h5pDocument, captions, colText, type) {
         listItem.setAttribute('role', 'listitem');
         listItem.id = `caption-${index}`; 
         
-
         const leftColumn = h5pDocument.createElement('div');
         leftColumn.classList.add('left-column');
         const timeButton = h5pDocument.createElement('button');
@@ -223,6 +222,12 @@ function setupCaptions(h5pDocument, captions, colText, type) {
         const rightColumn = h5pDocument.createElement('div');
         rightColumn.classList.add('right-column');
         rightColumn.textContent = caption.text.trim();
+        
+        rightColumn.onclick = () => {  
+            const videoElement = h5pDocument.querySelector('video');
+            videoElement.currentTime = caption.start;  
+            videoElement.play(); 
+        };
 
         listItem.appendChild(leftColumn);
         listItem.appendChild(rightColumn);
@@ -247,6 +252,13 @@ function setupCaptions(h5pDocument, captions, colText, type) {
             }
         });
     });
+    
+    rightColumn.onclick = () => { 
+    const videoElement = h5pDocument.querySelector('video');
+    videoElement.currentTime = caption.start;
+    videoElement.play();
+};
+
 }
 
 function formatTime(seconds) {
@@ -318,7 +330,6 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
     row.classList.add('row');
     container.appendChild(row);
 
-    // Video column
     const colVideo = h5pDocument.createElement('div');
     colVideo.classList.add('col-12', 'col-sm-8');
     colVideo.style.maxHeight = '520px';
@@ -326,7 +337,6 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
     colVideo.appendChild(videoElement);
     row.appendChild(colVideo);
 
-    // Captions column
     const colText = h5pDocument.createElement('div');
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = `captions-container-slide-${slideIndex}`;
@@ -334,7 +344,6 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
     colText.style.maxHeight = '520px';
     row.appendChild(colText);
 
-    // Apply styles for captions (same as in IV)
     const style = h5pDocument.createElement('style');
     style.type = 'text/css';
     style.innerHTML = `
@@ -376,7 +385,6 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
     `;
     h5pDocument.head.appendChild(style);
 
-    // Create each caption item
     captions.forEach((caption, index) => {
         const listItem = h5pDocument.createElement('div');
         listItem.classList.add('transcription-item');
@@ -397,6 +405,11 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
         const rightColumn = h5pDocument.createElement('div');
         rightColumn.classList.add('right-column');
         rightColumn.textContent = caption.text.trim();
+        
+        rightColumn.onclick = () => {
+            videoElement.currentTime = caption.start;  
+            videoElement.play(); 
+        };
 
         listItem.appendChild(leftColumn);
         listItem.appendChild(rightColumn);
