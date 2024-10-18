@@ -222,7 +222,6 @@ function setupCaptions(h5pDocument, captions, colText, type) {
         const rightColumn = h5pDocument.createElement('div');
         rightColumn.classList.add('right-column');
         rightColumn.textContent = caption.text.trim();
-        
         rightColumn.onclick = () => {  
             const videoElement = h5pDocument.querySelector('video');
             videoElement.currentTime = caption.start;  
@@ -332,8 +331,14 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
 
     const colVideo = h5pDocument.createElement('div');
     colVideo.classList.add('col-12', 'col-sm-8');
-    colVideo.style.maxHeight = '520px';
+    colVideo.style.display = 'flex'; 
+    colVideo.style.alignItems = 'center'; 
+    colVideo.style.justifyContent = 'center';
+    colVideo.style.minHeight = 'auto'; 
     colVideo.style.overflow = 'hidden';
+    videoElement.style.height = 'auto'; 
+    videoElement.style.maxHeight = '100%';
+    videoElement.controls = true;
     colVideo.appendChild(videoElement);
     row.appendChild(colVideo);
 
@@ -341,12 +346,16 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = `captions-container-slide-${slideIndex}`;
     colText.style.overflowY = 'auto';
-    colText.style.maxHeight = '520px';
+    colText.style.flexGrow = '1';
     row.appendChild(colText);
 
     const style = h5pDocument.createElement('style');
     style.type = 'text/css';
     style.innerHTML = `
+    
+        .container-fluid, .row, .col-12, .col-sm-8, .col-sm-4 {
+        height: 100vh !important;
+       }
         .transcription-item {
             display: flex;
             align-items: center;
