@@ -128,6 +128,8 @@ function initializeCoursePresentation(h5pDocument) {
 function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
     const container = h5pDocument.createElement('div');
     container.classList.add('container-fluid');
+    container.style.maxHeight = '100vh';
+    container.style.overflow = 'visible';
     h5pDocument.body.appendChild(container);
 
     const row = h5pDocument.createElement('div');
@@ -136,23 +138,23 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
 
     const colH5P = h5pDocument.createElement('div');
     colH5P.classList.add('col-12', 'col-sm-8');
-    colH5P.style.maxHeight = '520px';
-    colH5P.style.overflow = 'hidden';
+    colH5P.style.maxHeight = '100%';
+    colH5P.style.overflow = 'visible';
     colH5P.appendChild(h5pContainer);
     row.appendChild(colH5P);
 
     const colText = h5pDocument.createElement('div');
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = captionsContainerId;
-    colText.style.overflowY = 'auto';
-    colText.style.maxHeight = '520px';
+    colText.style.overflowY = 'scroll';
+    colText.style.maxHeight = '100vh';
     row.appendChild(colText);
 
     return colText;
 }
 
 function setupCaptions(h5pDocument, captions, colText, type) {
-    colText.innerHTML = ''; 
+    colText.innerHTML = '';
 
     const style = h5pDocument.createElement('style');
     style.type = 'text/css';
@@ -205,13 +207,13 @@ function setupCaptions(h5pDocument, captions, colText, type) {
         const listItem = h5pDocument.createElement('div');
         listItem.classList.add('transcription-item');
         listItem.setAttribute('role', 'listitem');
-        listItem.id = `caption-${index}`; 
-        
+        listItem.id = `caption-${index}`;
+
         const leftColumn = h5pDocument.createElement('div');
         leftColumn.classList.add('left-column');
         const timeButton = h5pDocument.createElement('button');
         timeButton.classList.add('timestamp-button');
-        timeButton.textContent = formatTime(caption.start); 
+        timeButton.textContent = formatTime(caption.start);
         timeButton.onclick = () => {
             const videoElement = h5pDocument.querySelector('video');
             videoElement.currentTime = caption.start;
@@ -222,10 +224,10 @@ function setupCaptions(h5pDocument, captions, colText, type) {
         const rightColumn = h5pDocument.createElement('div');
         rightColumn.classList.add('right-column');
         rightColumn.textContent = caption.text.trim();
-        rightColumn.onclick = () => {  
+        rightColumn.onclick = () => {
             const videoElement = h5pDocument.querySelector('video');
-            videoElement.currentTime = caption.start;  
-            videoElement.play(); 
+            videoElement.currentTime = caption.start;
+            videoElement.play();
         };
 
         listItem.appendChild(leftColumn);
@@ -251,12 +253,12 @@ function setupCaptions(h5pDocument, captions, colText, type) {
             }
         });
     });
-    
-    rightColumn.onclick = () => { 
-    const videoElement = h5pDocument.querySelector('video');
-    videoElement.currentTime = caption.start;
-    videoElement.play();
-};
+
+    rightColumn.onclick = () => {
+        const videoElement = h5pDocument.querySelector('video');
+        videoElement.currentTime = caption.start;
+        videoElement.play();
+    };
 
 }
 
@@ -277,7 +279,7 @@ function processVTT(vttData) {
         if (line === 'WEBVTT' || line === '') continue;
 
         if (line.match(/^[a-f0-9-]+$/) && i + 1 < lines.length) {
-            i++; 
+            i++;
             line = lines[i].trim();
         }
 
@@ -291,7 +293,7 @@ function processVTT(vttData) {
                 end: parseTime(times[1].trim()),
                 text: ''
             };
-        } 
+        }
         else if (line.length > 0 && currentCaption) {
             currentCaption.text += line + ' ';
         }
@@ -304,14 +306,14 @@ function processVTT(vttData) {
 
 function parseTime(timeString) {
     const timeParts = timeString.split(":");
-    if (timeParts.length === 3) { 
+    if (timeParts.length === 3) {
         const hours = parseInt(timeParts[0], 10) * 3600;
         const minutes = parseInt(timeParts[1], 10) * 60;
         const secondsParts = timeParts[2].split('.');
         const seconds = parseInt(secondsParts[0], 10);
         const milliseconds = secondsParts[1] ? parseInt(secondsParts[1], 10) / 1000 : 0;
         return hours + minutes + seconds + milliseconds;
-    } else if (timeParts.length === 2) { 
+    } else if (timeParts.length === 2) {
         const minutes = parseInt(timeParts[0], 10) * 60;
         const secondsParts = timeParts[1].split('.');
         const seconds = parseInt(secondsParts[0], 10);
@@ -324,19 +326,19 @@ function parseTime(timeString) {
 function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex) {
     const container = h5pDocument.createElement('div');
     container.classList.add('container-fluid');
-    
+
     const row = h5pDocument.createElement('div');
     row.classList.add('row');
     container.appendChild(row);
 
     const colVideo = h5pDocument.createElement('div');
     colVideo.classList.add('col-12', 'col-sm-8');
-    colVideo.style.display = 'flex'; 
-    colVideo.style.alignItems = 'center'; 
+    colVideo.style.display = 'flex';
+    colVideo.style.alignItems = 'center';
     colVideo.style.justifyContent = 'center';
-    colVideo.style.minHeight = 'auto'; 
+    colVideo.style.minHeight = 'auto';
     colVideo.style.overflow = 'hidden';
-    videoElement.style.height = 'auto'; 
+    videoElement.style.height = 'auto';
     videoElement.style.maxHeight = '100%';
     videoElement.controls = true;
     colVideo.appendChild(videoElement);
@@ -414,10 +416,10 @@ function createGridLayout(h5pDocument, slide, videoElement, captions, slideIndex
         const rightColumn = h5pDocument.createElement('div');
         rightColumn.classList.add('right-column');
         rightColumn.textContent = caption.text.trim();
-        
+
         rightColumn.onclick = () => {
-            videoElement.currentTime = caption.start;  
-            videoElement.play(); 
+            videoElement.currentTime = caption.start;
+            videoElement.play();
         };
 
         listItem.appendChild(leftColumn);
