@@ -147,8 +147,34 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
     const colText = h5pDocument.createElement('div');
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = captionsContainerId;
-    colText.style.overflowY = 'auto';
-    colText.style.maxHeight = '520px';
+    colText.style.display = 'flex';  // Usamos flexbox para dividir la columna en dos secciones verticales
+    colText.style.flexDirection = 'column';
+    colText.style.maxHeight = '100vh';
+
+    // Sección 1: Contenedor del botón, con un alto fijo de 54px
+    const buttonContainer = h5pDocument.createElement('div');
+    buttonContainer.classList.add('button-container');
+    buttonContainer.style.height = '38px';
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.alignItems = 'center';
+    buttonContainer.style.justifyContent = 'center'; 
+
+    const toggleButton = h5pDocument.createElement('button');
+    toggleButton.textContent = 'Subtítulos';
+    toggleButton.classList.add('btn', 'btn-primary');
+    toggleButton.id = 'toggle-captions-button';
+
+    buttonContainer.appendChild(toggleButton);
+    colText.appendChild(buttonContainer);
+
+    // Sección 2: Contenedor de los subtítulos, que ocupará el resto del espacio
+    const captionsContainer = h5pDocument.createElement('div');
+    captionsContainer.id = 'captions-content';  // Un nuevo contenedor para los subtítulos
+    captionsContainer.style.flexGrow = '1';  // Ocupa el resto del espacio
+    captionsContainer.style.overflowY = 'auto';  // Subtítulos desplazables si hay muchos
+    captionsContainer.style.padding = '10px';  // Agregamos algo de padding interno
+
+    colText.appendChild(captionsContainer);
     row.appendChild(colText);
 
     return captionsContainer;  // Este es el contenedor que usaremos para los subtítulos
@@ -255,12 +281,7 @@ function setupCaptions(h5pDocument, captions, colText, type) {
             }
         });
     });
-    
-    rightColumn.onclick = () => { 
-    const videoElement = h5pDocument.querySelector('video');
-    videoElement.currentTime = caption.start;
-    videoElement.play();
-};
+
 
 }
 
