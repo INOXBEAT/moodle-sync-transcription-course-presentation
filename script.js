@@ -138,31 +138,80 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
     row.classList.add('row');
     container.appendChild(row);
 
+    // Columna de video col-8, añadimos un ID para manipularla después
     const colH5P = h5pDocument.createElement('div');
     colH5P.classList.add('col-12', 'col-sm-8');
+    colH5P.id = 'col-h5p'; // ID para referencia
     colH5P.style.maxHeight = '100%';
     colH5P.appendChild(h5pContainer);
     row.appendChild(colH5P);
 
+    // Columna de subtítulos col-4
     const colText = h5pDocument.createElement('div');
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = captionsContainerId;
     colText.style.display = 'flex';  
     colText.style.flexDirection = 'column';
     colText.style.maxHeight = '100vh';
-
-
+    
     const captionsContainer = h5pDocument.createElement('div');
-    captionsContainer.id = 'captions-content';  
-    captionsContainer.style.flexGrow = '1';  
-    captionsContainer.style.overflowY = 'auto';  
+    captionsContainer.id = 'captions-content';
+    captionsContainer.style.flexGrow = '1';
+    captionsContainer.style.overflowY = 'auto';
     captionsContainer.style.padding = '10px';
 
     colText.appendChild(captionsContainer);
     row.appendChild(colText);
 
-    return captionsContainer;  
+    return captionsContainer;
 }
+
+function addCustomSubtitleOption(h5pDocument) {
+
+    const captionsControl = h5pDocument.querySelector('.h5p-control.h5p-captions');
+    if (!captionsControl) {
+        console.log('No se encontró el control de subtítulos.');
+        return;
+    }
+
+    const captionsMenu = h5pDocument.querySelector('.h5p-chooser.h5p-captions ol');
+    if (!captionsMenu) {
+        console.log('No se encontró el menú de subtítulos.');
+        return;
+    }
+
+    // Crear una nueva opción en el menú de subtítulos
+    const customOption = h5pDocument.createElement('li');
+    customOption.textContent = 'Transcripción';
+    customOption.style.marginLeft = '8px';
+    customOption.style.alignItems = 'center';
+    customOption.setAttribute('tabindex', '0');
+    customOption.setAttribute('aria-checked', 'false');
+    customOption.style.cursor = 'pointer';
+
+    // Añadir evento al hacer clic en la nueva opción
+    customOption.addEventListener('click', () => {
+        const colText = h5pDocument.getElementById('captions-container-iv');
+        const colH5P = h5pDocument.getElementById('col-h5p');
+
+        if (colText.classList.contains('d-none')) {
+            // Mostrar subtítulos y reducir la columna de video
+            colText.classList.remove('d-none');
+            colH5P.classList.remove('col-sm-12');
+            colH5P.classList.add('col-sm-8');
+            customOption.setAttribute('aria-checked', 'true');
+        } else {
+            // Ocultar subtítulos y ampliar la columna de video
+            colText.classList.add('d-none');
+            colH5P.classList.remove('col-sm-8');
+            colH5P.classList.add('col-sm-12');
+            customOption.setAttribute('aria-checked', 'false');
+        }
+    });
+
+    captionsMenu.appendChild(customOption);
+}
+
 
 function setupCaptions(h5pDocument, captions, colText, type) {
     colText.innerHTML = '';
