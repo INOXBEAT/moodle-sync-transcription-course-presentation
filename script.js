@@ -63,6 +63,9 @@ function initializeInteractiveVideo(h5pDocument) {
                     if (videoElement) {
                         syncSubtitlesWithScroll(videoElement, captions, h5pDocument, 'iv');
                     }
+
+                    // Agregamos la opción en el menú de subtítulos
+                    addCustomSubtitleOption(h5pDocument);
                 })
                 .catch(error => console.error('Error al procesar el archivo .vtt:', error.message));
         }
@@ -129,7 +132,6 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
     const container = h5pDocument.createElement('div');
     container.classList.add('container-fluid');
     container.style.maxHeight = '100vh';
-    container.style.overflow = 'visible';
     h5pDocument.body.appendChild(container);
 
     const row = h5pDocument.createElement('div');
@@ -139,47 +141,28 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
     const colH5P = h5pDocument.createElement('div');
     colH5P.classList.add('col-12', 'col-sm-8');
     colH5P.style.maxHeight = '100%';
-    colH5P.style.overflow = 'visible';
     colH5P.appendChild(h5pContainer);
     row.appendChild(colH5P);
 
-    // Creación de la columna col-4 que contendrá dos secciones: el botón y los subtítulos
     const colText = h5pDocument.createElement('div');
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = captionsContainerId;
-    colText.style.display = 'flex';  // Usamos flexbox para dividir la columna en dos secciones verticales
+    colText.style.display = 'flex';  
     colText.style.flexDirection = 'column';
     colText.style.maxHeight = '100vh';
 
-    // Sección 1: Contenedor del botón, con un alto fijo de 54px
-    const buttonContainer = h5pDocument.createElement('div');
-    buttonContainer.classList.add('button-container');
-    buttonContainer.style.height = '38px';
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.alignItems = 'center';
-    buttonContainer.style.justifyContent = 'center'; 
 
-    const toggleButton = h5pDocument.createElement('button');
-    toggleButton.textContent = 'Subtítulos';
-    toggleButton.classList.add('btn', 'btn-primary');
-    toggleButton.id = 'toggle-captions-button';
-
-    buttonContainer.appendChild(toggleButton);
-    colText.appendChild(buttonContainer);
-
-    // Sección 2: Contenedor de los subtítulos, que ocupará el resto del espacio
     const captionsContainer = h5pDocument.createElement('div');
-    captionsContainer.id = 'captions-content';  // Un nuevo contenedor para los subtítulos
-    captionsContainer.style.flexGrow = '1';  // Ocupa el resto del espacio
-    captionsContainer.style.overflowY = 'auto';  // Subtítulos desplazables si hay muchos
-    captionsContainer.style.padding = '10px';  // Agregamos algo de padding interno
+    captionsContainer.id = 'captions-content';  
+    captionsContainer.style.flexGrow = '1';  
+    captionsContainer.style.overflowY = 'auto';  
+    captionsContainer.style.padding = '10px';
 
     colText.appendChild(captionsContainer);
     row.appendChild(colText);
 
-    return captionsContainer;  // Este es el contenedor que usaremos para los subtítulos
+    return captionsContainer;  
 }
-
 
 function setupCaptions(h5pDocument, captions, colText, type) {
     colText.innerHTML = '';
@@ -502,4 +485,46 @@ function syncSubtitlesWithScroll(videoElement, captions, h5pDocument, type, slid
         colText.addEventListener('scroll', resetInactivityTimer);
         colText.addEventListener('mousemove', resetInactivityTimer);
     }
+}
+
+function addCustomSubtitleOption(h5pDocument) {
+
+    const captionsControl = h5pDocument.querySelector('.h5p-control.h5p-captions');
+    if (!captionsControl) {
+        console.log('No se encontró el control de subtítulos.');
+        return;
+    }
+
+    const captionsMenu = h5pDocument.querySelector('.h5p-chooser.h5p-captions ol');
+    if (!captionsMenu) {
+        console.log('No se encontró el menú de subtítulos.');
+        return;
+    }
+
+    const customOption = h5pDocument.createElement('li');
+    customOption.textContent = 'Transcripción';
+    customOption.style.marginLeft = '8px';
+    customOption.style.alignItems = 'center';
+    customOption.setAttribute('tabindex', '0');
+    customOption.setAttribute('aria-checked', 'false');
+    customOption.style.cursor = 'pointer';
+
+    customOption.addEventListener('click', () => {
+        const colText = h5pDocument.getElementById('captions-container-iv');
+        const colH5P = h5pDocument.getElementById('col-h5p');
+
+        if (colText.classList.contains('d-none')) {
+            colText.classList.remove('d-none');
+            colH5P.classList.remove('col-sm-12');
+            colH5P.classList.add('col-sm-8');
+            customOption.setAttribute('aria-checked', 'true');
+        } else {
+            colText.classList.add('d-none');
+            colH5P.classList.remove('col-sm-8');
+            colH5P.classList.add('col-sm-12');
+            customOption.setAttribute('aria-checked', 'false');
+        }
+    });
+
+    captionsMenu.appendChild(customOption);
 }
