@@ -33,10 +33,50 @@ window.onload = function () {
                     console.log('Recurso identificado: Course Presentation');
                     initializeCoursePresentation(h5pDocument);
                 }
+
+                setTimeout(() => {
+                    adjustHeights(h5pDocument); 
+                }, 500);
+
+                h5pContent.contentWindow.addEventListener('resize', () => adjustHeights(h5pDocument));
+                h5pContent.contentWindow.addEventListener('load', () => adjustHeights(h5pDocument));
+                h5pContent.contentWindow.addEventListener('DOMContentLoaded', () => adjustHeights(h5pDocument));
+
+                observeContentChanges(h5pDocument);
             }
         }, 500);
     }
 };
+
+function observeContentChanges(h5pDocument) {
+    const observer = new MutationObserver(() => {
+        adjustHeights(h5pDocument);
+    });
+
+    const targetNode = h5pDocument.body;
+    const config = { childList: true, subtree: true };
+
+    observer.observe(targetNode, config);
+}
+
+function adjustHeights(h5pDocument) {
+    const colH5P = h5pDocument.getElementById('col-h5p');
+    const colText = h5pDocument.getElementById('captions-container-iv');
+
+    if (colH5P && colText) {
+        const h5pHeight = colH5P.offsetHeight;
+        const textHeight = colText.offsetHeight;
+
+        if (h5pHeight !== textHeight) {
+            const maxHeight = Math.max(h5pHeight, textHeight);
+
+            colH5P.style.height = `${maxHeight}px`;
+            colText.style.height = `${maxHeight}px`;
+
+            console.log('Alturas ajustadas:', maxHeight);
+        }
+    }
+}
 
 function initializeInteractiveVideo(h5pDocument) {
     const h5pContainer = h5pDocument.querySelector('.h5p-content');
@@ -211,7 +251,6 @@ function addCustomSubtitleOption(h5pDocument) {
 
     captionsMenu.appendChild(customOption);
 }
-
 
 function setupCaptions(h5pDocument, captions, colText, type) {
     colText.innerHTML = '';
