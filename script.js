@@ -48,17 +48,6 @@ window.onload = function () {
     }
 };
 
-function observeContentChanges(h5pDocument) {
-    const observer = new MutationObserver(() => {
-        adjustHeights(h5pDocument);
-    });
-
-    const targetNode = h5pDocument.body;
-    const config = { childList: true, subtree: true };
-
-    observer.observe(targetNode, config);
-}
-
 function adjustHeights(h5pDocument) {
     const colH5P = h5pDocument.getElementById('col-h5p');
     const colText = h5pDocument.getElementById('captions-container-iv');
@@ -104,7 +93,6 @@ function initializeInteractiveVideo(h5pDocument) {
                         syncSubtitlesWithScroll(videoElement, captions, h5pDocument, 'iv');
                     }
 
-                    // Agregamos la opción en el menú de subtítulos
                     addCustomSubtitleOption(h5pDocument);
                 })
                 .catch(error => console.error('Error al procesar el archivo .vtt:', error.message));
@@ -178,15 +166,13 @@ function setupContainerLayout(h5pDocument, h5pContainer, captionsContainerId) {
     row.classList.add('row');
     container.appendChild(row);
 
-    // Columna de video col-8, añadimos un ID para manipularla después
     const colH5P = h5pDocument.createElement('div');
     colH5P.classList.add('col-12', 'col-sm-8');
-    colH5P.id = 'col-h5p'; // ID para referencia
+    colH5P.id = 'col-h5p'; 
     colH5P.style.maxHeight = '100%';
     colH5P.appendChild(h5pContainer);
     row.appendChild(colH5P);
 
-    // Columna de subtítulos col-4
     const colText = h5pDocument.createElement('div');
     colText.classList.add('col-12', 'col-sm-4');
     colText.id = captionsContainerId;
@@ -605,9 +591,11 @@ function addCustomSubtitleOption(h5pDocument) {
             colText.classList.remove('d-none');
             colH5P.classList.remove('col-sm-12');
             colH5P.classList.add('col-sm-8');
+            colH5P.style.width = ''; 
             customOption.setAttribute('aria-checked', 'true');
         } else {
             colText.classList.add('d-none');
+            colH5P.style.width = '100%';
             colH5P.classList.remove('col-sm-8');
             colH5P.classList.add('col-sm-12');
             customOption.setAttribute('aria-checked', 'false');
